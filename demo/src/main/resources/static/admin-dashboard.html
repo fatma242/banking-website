@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Admin Dashboard</title>
+    <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+    <div class="background">
+        <div class="shape"></div>
+        <div class="shape"></div>
+    </div>
+
+    <div class="container">
+        <h1>Admin Dashboard</h1>
+
+        <!-- Logout Button -->
+        <button onclick="logout()" class="logout-btn">Logout</button>
+
+        <!-- Transactions Section -->
+        <h2>All Transactions</h2>
+        <button onclick="fetchTransactions()">Get Transactions</button>
+        <div id="transactions"></div>
+        <hr>
+
+        <!-- Messages Section -->
+        <h2>All Messages</h2>
+        <button onclick="fetchMessages()">Get Messages</button>
+        <div id="messages"></div>
+        <hr>
+
+        <!-- Complaints Section -->
+        <h2>All Complaints</h2>
+        <button onclick="fetchComplaints()">Get Complaints</button>
+        <div id="complaints"></div>
+        <hr>
+
+        <!-- Users Section -->
+        <h2>All Users</h2>
+        <button onclick="fetchUsers()">Get Users</button>
+        <div id="users"></div>
+    </div>
+
+    <script>
+        // Helper function to format date and time
+        function formatDateTime(dateString) {
+            const date = new Date(dateString);
+            const formattedDate = date.toLocaleDateString();
+            const formattedTime = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true });
+            return `${formattedDate} - ${formattedTime}`;
+        }
+
+        // Logout Function
+        function logout() {
+            alert("You have been logged out!");
+            window.location.href = "index.html";  // Redirect to login page
+        }
+
+        // Fetch Transactions
+        function fetchTransactions() {
+            fetch('/transactions')
+                .then(response => response.json())
+                .then(data => {
+                    const transactionsDiv = document.getElementById('transactions');
+                    transactionsDiv.innerHTML = data.map(t => `
+                        <div>
+                            <p>From: ${t.fromAccount ? t.fromAccount.accountNumber : 'N/A'} → To: ${t.toAccount ? t.toAccount.accountNumber : 'N/A'}</p>
+                            <p>Amount: ${t.amount}</p>
+                            <p>Date: ${formatDateTime(t.date)}</p>
+                            <hr>
+                        </div>
+                    `).join('');
+                })
+                .catch(error => console.error('Error fetching transactions:', error));
+        }
+
+        // Fetch Messages
+        function fetchMessages() {
+            fetch('/messages')
+                .then(response => response.json())
+                .then(data => {
+                    const messagesDiv = document.getElementById('messages');
+                    messagesDiv.innerHTML = data.map(m => `
+                        <div>
+                            <p>From: ${m.sender ? m.sender.username : 'N/A'} → To Admin: ${m.admin ? m.admin.username : 'N/A'}</p>
+                            <p>Content: ${m.content}</p>
+                            <p>Date: ${formatDateTime(m.timestamp)}</p>
+                            <hr>
+                        </div>
+                    `).join('');
+                })
+                .catch(error => console.error('Error fetching messages:', error));
+        }
+
+        // Fetch Complaints
+       // Fetch Complaints
+        function fetchComplaints() {
+            fetch('/complaints')
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    const complaintsDiv = document.getElementById('complaints');
+                    complaintsDiv.innerHTML = data.map(c => `
+                        <div>
+                            <p><strong>ID:</strong> ${c.id}</p>
+                            <p><strong>Title:</strong> ${c.title}</p>
+                            <p><strong>Description:</strong> ${c.description}</p>
+                            <p><strong>File Path:</strong> ${c.filePath || 'No File Uploaded'}</p>
+                            <hr>
+                        </div>
+                    `).join('');
+                })
+                .catch(error => console.error('Error fetching complaints:', error));
+        }
+
+
+        // Fetch Users
+        function fetchUsers() {
+            fetch('/users')
+                .then(response => response.json())
+                .then(data => {
+                    const usersDiv = document.getElementById('users');
+                    usersDiv.innerHTML = data.map(u => `
+                        <div>
+                            <p>Username: ${u.username}</p>
+                            <p>Role: ${u.role}</p>
+                            <p>Joined: ${formatDateTime(u.joinedAt)}</p>
+                            <hr>
+                        </div>
+                    `).join('');
+                })
+                .catch(error => console.error('Error fetching users:', error));
+        }
+    </script>
+
+    <style>
+        /* Logout Button Styling */
+        .logout-btn {
+            background: #ff512f;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            font-size: 16px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-bottom: 20px;
+            float: right;
+        }
+
+        .logout-btn:hover {
+            background: #e94024;
+        }
+
+        /* Container Styling */
+        .container {
+            color: white;
+        }
+    </style>
+</body>
+</html>
