@@ -3,6 +3,7 @@ package com.example.demo.controller;
 import com.example.demo.model.Complaint;
 import com.example.demo.service.ComplaintService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import java.nio.file.Path;
@@ -18,19 +19,19 @@ public class ComplaintController {
     private ComplaintService complaintService;
     private final Path uploadDir = Paths.get(System.getProperty("user.home"), "Downloads", "banking website", "uploads");
 
-    // Missing Authentication/Authorization
     @GetMapping
+    @PreAuthorize("hasAuthority('ADMIN')")
     public List<Complaint> getAllComplaints() {
         return complaintService.getAllComplaints();
     }
 
-    // Unrestricted File Upload 
     @PostMapping("/upload")
+    @PreAuthorize("hasAuthority('USER')")
     public String uploadFile(@RequestParam("file") MultipartFile file) {
         return complaintService.uploadFile(file);
     }
 
-     @GetMapping("/view")
+    @GetMapping("/view")
     public String viewFile(@RequestParam String filename) throws Exception {
         Path file = uploadDir.resolve(filename);
         if (Files.exists(file)) {

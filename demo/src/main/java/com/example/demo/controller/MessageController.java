@@ -4,6 +4,7 @@ import com.example.demo.model.Message;
 import com.example.demo.service.MessageService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import java.util.Map;
@@ -15,14 +16,15 @@ public class MessageController {
     @Autowired
     private MessageService messageService;
 
-    // Missing Authentication/Authorization
     @GetMapping
+    @PreAuthorize("hasAuthority('ADMIN')")
     public List<Message> getAllMessages() {
         return messageService.getAllMessages();
     }
 
-    // Missing Authentication/Authorization
+
     @PostMapping("/send")
+    @PreAuthorize("hasAuthority('USER')")
     public ResponseEntity<?> sendMessageToSpecificAdmin(@RequestBody Map<String, String> payload) {
         try {
             Long senderId = Long.parseLong(payload.get("senderId"));

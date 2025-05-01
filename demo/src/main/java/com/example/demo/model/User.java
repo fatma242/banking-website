@@ -15,9 +15,6 @@ public class User {
     private String password;
     private String role; // USER or ADMIN
 
-    // (Missing Encryption of Sensitive Data)
-    private String creditCardNumber;
-
     @JsonIgnore
     @OneToMany(mappedBy = "sender", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Message> sendMessages;
@@ -29,11 +26,10 @@ public class User {
     public User() {
     }
 
-    public User(String username, String password, String role, String creditCardNumber) {
+    public User(String username, String password, String role) {
         this.username = username;
         this.password = password;
         this.role = role;
-        this.creditCardNumber = creditCardNumber;
     }
 
     // Getters & Setters
@@ -69,19 +65,19 @@ public class User {
         this.role = role;
     }
 
-    public String getCreditCardNumber() {
-        return creditCardNumber;
-    }
-
-    public void setCreditCardNumber(String creditCardNumber) {
-        this.creditCardNumber = creditCardNumber;
-    }
-
     public List<Message> getSendMessages() {
         return sendMessages;
     }
 
     public void setSendMessages(List<Message> sendMessages) {
         this.sendMessages = sendMessages;
+    }
+
+    public List<Message> getReceivedMessages() {
+        return receivedMessages;
+    }
+
+    public void setReceivedMessages(List<Message> receivedMessages) {
+        this.receivedMessages = receivedMessages;
     }
 }

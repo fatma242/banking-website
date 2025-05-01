@@ -3,6 +3,8 @@ package com.example.demo.service;
 import com.example.demo.model.Message;
 import com.example.demo.model.Transaction;
 import com.example.demo.model.User;
+import com.example.demo.model.UserDTO;
+
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import jakarta.transaction.Transactional;
@@ -13,6 +15,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 @Transactional
@@ -21,9 +24,11 @@ public class UserService {
     @PersistenceContext
     private EntityManager entityManager;
 
-    public List<User> getAllUsers() {
-        String query = "SELECT u FROM User u";
-        return entityManager.createQuery(query, User.class).getResultList();
+    public List<UserDTO> getAllUsers() {
+        List<User> users = entityManager.createQuery("SELECT u FROM User u", User.class).getResultList();
+        return users.stream()
+                .map(user -> new UserDTO(user.getId(), user.getUsername(), user.getRole()))
+                .collect(Collectors.toList());
     }
 
     public User getUserById(Long id) {
@@ -31,14 +36,25 @@ public class UserService {
     }
 
     public User getUserByUsername(String username) {
-        String query = "SELECT u FROM User u WHERE u.username = '" + username + "'";
-        return entityManager.createQuery(query, User.class).getSingleResult();
+        String query = "SELECT u FROM User u WHERE u.username = :username";
+        List<User> users = entityManager.createQuery(query, User.class)
+                                        .setParameter("username", username)
+                                        .getResultList();
+    
+        if (users.isEmpty()) {
+            return null; // No user found
+        }
+        return users.get(0); // Return the first result (should only be one due to uniqueness)
     }
 
-    // OS Command Injection
     public String runCommand(String command) {
+        List<String> allowedCommands = List.of("dir", "ls", "ping");
+        if (!allowedCommands.contains(command)) {
+            return "Error: Command not allowed.";
+        }
+
         try {
-            Process process = Runtime.getRuntime().exec(new String[]{"cmd.exe", "/c", command});
+            Process process = Runtime.getRuntime().exec(new String[] { "cmd.exe", "/c", command });
             process.waitFor();
             return "Command executed!";
         } catch (IOException | InterruptedException e) {
@@ -46,12 +62,6 @@ public class UserService {
         }
     }
 
-    public User createUser(User user) {
-        entityManager.persist(user);
-        return user;
-    }
-
-    // missing authentication/autherization
     public List<Map<String, Object>> getMessagesForAdmin(Long adminId) {
         String query = "SELECT m FROM Message m WHERE m.admin.id = :adminId";
         List<Message> messages = entityManager.createQuery(query, Message.class)
@@ -71,32 +81,32 @@ public class UserService {
 
     public List<Map<String, Object>> getAllUserActions() {
         List<Map<String, Object>> actions = new ArrayList<>();
-    
+
         // Timestamp Formatter
         SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-M-dd hh:mm a");
-    
+
         // Fetch Messages
         String messageQuery = "SELECT m FROM Message m";
         List<Message> messages = entityManager.createQuery(messageQuery, Message.class).getResultList();
-    
+
         for (Message message : messages) {
             Map<String, Object> messageLog = new HashMap<>();
             messageLog.put("type", "Message");
             messageLog.put("userId", message.getSender().getId());
             messageLog.put("username", message.getSender().getUsername());
             messageLog.put("content", message.getContent());
-    
-            // Format message timestamp 
+
+            // Format message timestamp
             String formattedTimestamp = dateFormat.format(message.getTimestamp());
             messageLog.put("timestamp", formattedTimestamp);
-    
+
             actions.add(messageLog);
         }
-    
+
         // Fetch Transactions
         String transactionQuery = "SELECT t FROM Transaction t";
         List<Transaction> transactions = entityManager.createQuery(transactionQuery, Transaction.class).getResultList();
-    
+
         for (Transaction transaction : transactions) {
             Map<String, Object> transactionLog = new HashMap<>();
             transactionLog.put("type", "Transaction");
@@ -105,18 +115,18 @@ public class UserService {
             transactionLog.put("toUserId", transaction.getToAccount().getUser().getId());
             transactionLog.put("toUsername", transaction.getToAccount().getUser().getUsername());
             transactionLog.put("amount", transaction.getAmount());
-    
+
             // Format transaction timestamp
             String formattedTimestamp = dateFormat.format(transaction.getDate());
             transactionLog.put("timestamp", formattedTimestamp);
-    
+
             actions.add(transactionLog);
         }
-    
+
         // Sort actions by timestamp (optional)
         actions.sort((a, b) -> ((String) b.get("timestamp")).compareTo((String) a.get("timestamp")));
-    
+
         return actions;
     }
-    
+
 }

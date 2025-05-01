@@ -3,9 +3,25 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="X-UA-Compatible" content="ie=edge">
     <title>Banking System - Home</title>
     <link rel="stylesheet" href="/styles.css">
+
+    <!-- 🔐 Auth + Role Check -->
+    <script>
+        fetch("/users/getUser")
+            .then(response => {
+                if (!response.ok) throw new Error("Not authenticated");
+                return response.json();
+            })
+            .then(user => {
+                if (user.role !== "USER") {
+                    window.location.href = "/index.html";
+                }
+            })
+            .catch(() => {
+                window.location.href = "/index.html";
+            });
+    </script>
 </head>
 <body>
     <div class="background">
@@ -15,7 +31,6 @@
 
     <div class="container">
         <h1>Welcome to Banking System</h1>
-        
         <button onclick="logout()" class="logout-btn">Logout</button>
 
         <h2>Transfer Money</h2>
@@ -62,34 +77,27 @@
             alert("You have been logged out!");
             window.location.href = "/index.html";
         }
+
         function transferMoney() {
             const fromAccountId = document.getElementById("fromAccountId").value;
             const toAccountId = document.getElementById("toAccountId").value;
             const amount = document.getElementById("amount").value;
 
-            fetch("http://localhost:9090/accounts/transfer", {
+            fetch("http://localhost:8081/accounts/transfer", {
                 method: "POST",
-                headers: {
-                    "Content-Type": "application/json"
-                },
+                headers: { "Content-Type": "application/json" },
+                credentials: "include",
                 body: JSON.stringify({
                     fromAccount: { id: parseInt(fromAccountId) },
                     toAccount: { id: parseInt(toAccountId) },
                     amount: parseFloat(amount)
                 })
-
             })
             .then(response => {
-                if (!response.ok) {
-                    throw new Error("Network response was not ok");
-                }
-                return response.text();  // Read response as text
+                if (!response.ok) throw new Error("Transfer failed");
+                return response.text();
             })
-            .then(message => {
-                console.log("Response from backend:", message);  // Debug log
-                alert(message);
-            })
-
+            .then(alert)
             .catch(error => {
                 console.error("Error:", error);
                 alert("Transfer Failed!");
@@ -101,11 +109,10 @@
             const adminId = document.getElementById("adminId").value;
             const content = document.getElementById("content").value;
 
-            fetch("http://localhost:9090/messages/send", {
+            fetch("http://localhost:8081/messages/send", {
                 method: "POST",
-                headers: {
-                    "Content-Type": "application/json"
-                },
+                headers: { "Content-Type": "application/json" },
+                credentials: "include",
                 body: JSON.stringify({
                     senderId: parseInt(senderId),
                     adminId: parseInt(adminId),
@@ -113,15 +120,10 @@
                 })
             })
             .then(response => {
-                if (!response.ok) {
-                    throw new Error("Network response was not ok");
-                }
+                if (!response.ok) throw new Error("Message failed");
                 return response.text();
             })
-            .then(message => {
-                console.log("Response from backend:", message);
-                alert(message);
-            })
+            .then(alert)
             .catch(error => {
                 console.error("Error:", error);
                 alert("Message sending failed!");
@@ -138,26 +140,21 @@
             const formData = new FormData();
             formData.append("file", fileInput.files[0]);
 
-            fetch("http://localhost:9090/complaints/upload", {
+            fetch("http://localhost:8081/complaints/upload", {
                 method: "POST",
+                credentials: "include",
                 body: formData
             })
             .then(response => {
-                if (!response.ok) {
-                    throw new Error("Network response was not ok");
-                }
+                if (!response.ok) throw new Error("Upload failed");
                 return response.text();
             })
-            .then(message => {
-                console.log("Response from backend:", message);
-                alert(message);
-            })
+            .then(alert)
             .catch(error => {
                 console.error("Error:", error);
                 alert("File upload failed!");
             });
         }
-
     </script>
 </body>
 </html>
