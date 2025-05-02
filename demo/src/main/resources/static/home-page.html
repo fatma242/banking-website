@@ -1,160 +1,105 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Banking System - Home</title>
-    <link rel="stylesheet" href="/styles.css">
-
-    <!-- 🔐 Auth + Role Check -->
-    <script>
-        fetch("/users/getUser")
-            .then(response => {
-                if (!response.ok) throw new Error("Not authenticated");
-                return response.json();
-            })
-            .then(user => {
-                if (user.role !== "USER") {
-                    window.location.href = "/index.html";
-                }
-            })
-            .catch(() => {
-                window.location.href = "/index.html";
-            });
-    </script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <title>User Home ‑ Banking System</title>
+  <link rel="stylesheet" href="/styles.css">
 </head>
 <body>
-    <div class="background">
-        <div class="shape"></div>
-        <div class="shape"></div>
-    </div>
+  <div class="background">
+    <div class="shape"></div>
+    <div class="shape"></div>
+  </div>
 
-    <div class="container">
-        <h1>Welcome to Banking System</h1>
-        <button onclick="logout()" class="logout-btn">Logout</button>
+  <div class="container">
+    <h1>Welcome to the Banking System</h1>
+    <button onclick="location.href='/logout'">Logout</button>
 
-        <h2>Transfer Money</h2>
-        <form id="transferForm">
-            <label for="fromAccountId">From Account ID:</label>
-            <input type="text" id="fromAccountId" required>
+    <h2>Transfer Money</h2>
+    <form id="transferForm" onsubmit="return transferMoney();">
+      <label for="fromAccountId">From Account ID:</label>
+      <input type="text" id="fromAccountId" required>
 
-            <label for="toAccountId">To Account ID:</label>
-            <input type="text" id="toAccountId" required>
+      <label for="toAccountId">To Account ID:</label>
+      <input type="text" id="toAccountId" required>
 
-            <label for="amount">Amount:</label>
-            <input type="number" id="amount" required>
+      <label for="amount">Amount:</label>
+      <input type="number" id="amount" required>
 
-            <button type="button" onclick="transferMoney()">Transfer</button>
-        </form>
+      <button type="submit">Transfer</button>
+    </form>
 
-        <hr>
+    <hr>
 
-        <h2>Send Message to Admin</h2>
-        <form id="messageForm">
-            <label for="senderId">Your ID:</label>
-            <input type="text" id="senderId" required>
+    <h2>Send Message to Admin</h2>
+    <form id="messageForm" onsubmit="return sendMessage();">
+      <label for="senderId">Your ID:</label>
+      <input type="text" id="senderId" required>
 
-            <label for="adminId">Admin ID:</label>
-            <input type="text" id="adminId" required>
+      <label for="adminId">Admin ID:</label>
+      <input type="text" id="adminId" required>
 
-            <label for="content">Message:</label>
-            <textarea id="content" rows="4" required></textarea>
+      <label for="content">Message:</label>
+      <textarea id="content" rows="4" required></textarea>
 
-            <button type="button" onclick="sendMessage()">Send Message</button>
-        </form>
+      <button type="submit">Send Message</button>
+    </form>
 
-        <hr>
+    <hr>
 
-        <h2>Upload File</h2>
-        <form id="uploadForm" enctype="multipart/form-data">
-            <input type="file" id="fileInput" required>
-            <button type="button" onclick="uploadFile()">Upload</button>
-        </form>
-    </div>
+    <h2>Upload Complaint File</h2>
+    <form id="uploadForm" enctype="multipart/form-data" onsubmit="return uploadFile();">
+      <input type="file" id="fileInput" required>
+      <button type="submit">Upload</button>
+    </form>
+  </div>
 
-    <script>
-        function logout() {
-            alert("You have been logged out!");
-            window.location.href = "/index.html";
-        }
+  <script>
+    // All fetch calls include session cookie automatically
+    async function transferMoney() {
+      event.preventDefault();
+      const fromAccountId = +document.getElementById("fromAccountId").value;
+      const toAccountId = +document.getElementById("toAccountId").value;
+      const amount = +document.getElementById("amount").value;
 
-        function transferMoney() {
-            const fromAccountId = document.getElementById("fromAccountId").value;
-            const toAccountId = document.getElementById("toAccountId").value;
-            const amount = document.getElementById("amount").value;
+      const res = await fetch("/accounts/transfer", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ fromAccount:{id:fromAccountId}, toAccount:{id:toAccountId}, amount })
+      });
+      alert((await res.text()));
+      return false;
+    }
 
-            fetch("http://localhost:8081/accounts/transfer", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                credentials: "include",
-                body: JSON.stringify({
-                    fromAccount: { id: parseInt(fromAccountId) },
-                    toAccount: { id: parseInt(toAccountId) },
-                    amount: parseFloat(amount)
-                })
-            })
-            .then(response => {
-                if (!response.ok) throw new Error("Transfer failed");
-                return response.text();
-            })
-            .then(alert)
-            .catch(error => {
-                console.error("Error:", error);
-                alert("Transfer Failed!");
-            });
-        }
+    async function sendMessage() {
+      event.preventDefault();
+      const senderId = +document.getElementById("senderId").value;
+      const adminId = +document.getElementById("adminId").value;
+      const content = document.getElementById("content").value;
 
-        function sendMessage() {
-            const senderId = document.getElementById("senderId").value;
-            const adminId = document.getElementById("adminId").value;
-            const content = document.getElementById("content").value;
+      const res = await fetch("/messages/send", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ senderId, adminId, content })
+      });
+      alert((await res.text()));
+      return false;
+    }
 
-            fetch("http://localhost:8081/messages/send", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                credentials: "include",
-                body: JSON.stringify({
-                    senderId: parseInt(senderId),
-                    adminId: parseInt(adminId),
-                    content: content
-                })
-            })
-            .then(response => {
-                if (!response.ok) throw new Error("Message failed");
-                return response.text();
-            })
-            .then(alert)
-            .catch(error => {
-                console.error("Error:", error);
-                alert("Message sending failed!");
-            });
-        }
+    async function uploadFile() {
+      event.preventDefault();
+      const file = document.getElementById("fileInput").files[0];
+      const formData = new FormData();
+      formData.append("file", file);
 
-        function uploadFile() {
-            const fileInput = document.getElementById("fileInput");
-            if (fileInput.files.length === 0) {
-                alert("Please select a file to upload.");
-                return;
-            }
-
-            const formData = new FormData();
-            formData.append("file", fileInput.files[0]);
-
-            fetch("http://localhost:8081/complaints/upload", {
-                method: "POST",
-                credentials: "include",
-                body: formData
-            })
-            .then(response => {
-                if (!response.ok) throw new Error("Upload failed");
-                return response.text();
-            })
-            .then(alert)
-            .catch(error => {
-                console.error("Error:", error);
-                alert("File upload failed!");
-            });
-        }
-    </script>
+      const res = await fetch("/complaints/upload", {
+        method: "POST",
+        body: formData
+      });
+      alert((await res.text()));
+      return false;
+    }
+  </script>
 </body>
 </html>

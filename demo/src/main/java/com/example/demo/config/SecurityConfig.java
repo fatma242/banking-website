@@ -12,74 +12,88 @@ import org.springframework.security.config.Customizer;
 import org.springframework.security.crypto.password.NoOpPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
+import org.springframework.security.web.authentication.LoginUrlAuthenticationEntryPoint;
+
+
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.security.core.Authentication;
+
+import java.io.IOException;
 
 @Configuration
-@EnableMethodSecurity  // Enables @PreAuthorize, etc.
+@EnableMethodSecurity
 public class SecurityConfig {
 
     private final CustomUserDetailsService userDetailsService;
-
-    public SecurityConfig(CustomUserDetailsService userDetailsService) {
-        this.userDetailsService = userDetailsService;
+    public SecurityConfig(CustomUserDetailsService uds) {
+        this.userDetailsService = uds;
     }
 
-    // Use plain text password encoder (NOT for production!)
     @Bean
     public PasswordEncoder passwordEncoder() {
-        return NoOpPasswordEncoder.getInstance();
+        return NoOpPasswordEncoder.getInstance();  // dev only
     }
 
-    // Authentication provider using custom user details service
     @Bean
     public DaoAuthenticationProvider authenticationProvider() {
-        DaoAuthenticationProvider provider = new DaoAuthenticationProvider();
-        provider.setUserDetailsService(userDetailsService);
-        provider.setPasswordEncoder(passwordEncoder());
-        return provider;
+        var p = new DaoAuthenticationProvider();
+        p.setUserDetailsService(userDetailsService);
+        p.setPasswordEncoder(passwordEncoder());
+        return p;
     }
 
-    // Provide the AuthenticationManager bean
     @Bean
     public AuthenticationManager authenticationManager(
-            AuthenticationConfiguration config
+        AuthenticationConfiguration cfg
     ) throws Exception {
-        return config.getAuthenticationManager();
+        return cfg.getAuthenticationManager();
     }
 
-    // Main security filter chain
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+        // your existing beans…
         http
-            // Disable CSRF for Postman/curl use
-            .csrf(csrf -> csrf.disable())
+        .csrf(csrf -> csrf.disable())
+        .authenticationProvider(authenticationProvider())
+        .authorizeHttpRequests(auth -> auth
+            // public & static
+            .requestMatchers("/", "/index.html", "/styles.css", "/js/**", "/css/**").permitAll()
+            // view pages
+            .requestMatchers("/home-page.html").hasAuthority("USER")
+            .requestMatchers("/admin-dashboard.html").hasAuthority("ADMIN")
+            // APIs…
+            .anyRequest().authenticated()
+        )
+    
+        // form login
+        .formLogin(form -> form
+            .loginPage("/index.html")
+            .loginProcessingUrl("/users/login")
+            .successHandler((request, response, authentication) -> {
+                boolean isAdmin = authentication.getAuthorities().stream()
+                    .anyMatch(a -> a.getAuthority().equals("ADMIN"));
 
-            // Use our custom authentication provider
-            .authenticationProvider(authenticationProvider())
-
-            // Define URL access rules
-            .authorizeHttpRequests(auth -> auth
-
-                // Public login endpoint
-                .requestMatchers("/users/login").permitAll()
-
-                // USER-only endpoints
-                .requestMatchers("/messages/send").hasAuthority("USER")
-                .requestMatchers("/complaints/upload").hasAuthority("USER")
-                .requestMatchers("/accounts/transfer").hasAuthority("USER")
-
-                // ADMIN-only endpoints
-                .requestMatchers("/users/**").hasAuthority("ADMIN")
-                .requestMatchers("/messages").hasAuthority("ADMIN")
-                .requestMatchers("/complaints").hasAuthority("ADMIN")
-                .requestMatchers("/accounts/**").hasAuthority("ADMIN")
-                .requestMatchers("/transactions").hasAuthority("ADMIN")
-
-                // Any other request must be authenticated
-                .anyRequest().authenticated()
-            )
-
-            // Use HTTP Basic auth (suitable for testing with Postman)
-            .httpBasic(Customizer.withDefaults());
+                if (isAdmin) {
+                    response.sendRedirect("/admin-dashboard.html");
+                } else {
+                    response.sendRedirect("/home-page.html");
+                }
+            })
+            .permitAll()
+        )
+ 
+        // HTTP Basic
+        .httpBasic(Customizer.withDefaults())
+    
+        // <<< add this block >>>
+        .exceptionHandling(ex -> ex
+            // unauthenticated: send to /index.html
+            .authenticationEntryPoint(new LoginUrlAuthenticationEntryPoint("/index.html"))
+            // authenticated-but-no-ADMIN: also send to /index.html
+            .accessDeniedPage("/index.html")
+        );
 
         return http.build();
     }

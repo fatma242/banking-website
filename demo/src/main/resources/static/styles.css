@@ -128,3 +128,11 @@ label {
     display: block;
     margin-bottom: 5px;
 }
+
+
+#transactions div,
+#messages div,
+#complaints div,
+#users div {
+  color: white;
+}
