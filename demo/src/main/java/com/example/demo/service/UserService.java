@@ -8,6 +8,9 @@ import com.example.demo.model.UserDTO;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import jakarta.transaction.Transactional;
+
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
@@ -23,6 +26,9 @@ public class UserService {
 
     @PersistenceContext
     private EntityManager entityManager;
+
+    private final PasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
+
 
     public List<UserDTO> getAllUsers() {
         List<User> users = entityManager.createQuery("SELECT u FROM User u", User.class).getResultList();
@@ -47,20 +53,24 @@ public class UserService {
         return users.get(0); // Return the first result (should only be one due to uniqueness)
     }
 
-    public String runCommand(String command) {
-        List<String> allowedCommands = List.of("dir", "ls", "ping");
-        if (!allowedCommands.contains(command)) {
+    public String runCommand(String input) {
+        // Define internal mappings for allowed commands
+        Map<String, String[]> commandMap = Map.of(
+            "list", new String[] { "cmd.exe", "/c", "dir" },   // Windows
+            "ping", new String[] { "cmd.exe", "/c", "ping 127.0.0.1" }
+        );
+        if (!commandMap.containsKey(input)) {
             return "Error: Command not allowed.";
         }
-
         try {
-            Process process = Runtime.getRuntime().exec(new String[] { "cmd.exe", "/c", command });
+            Process process = new ProcessBuilder(commandMap.get(input)).start();
             process.waitFor();
-            return "Command executed!";
+            return "Command executed safely!";
         } catch (IOException | InterruptedException e) {
             return "Error: " + e.getMessage();
         }
     }
+    
 
     public List<Map<String, Object>> getMessagesForAdmin(Long adminId) {
         String query = "SELECT m FROM Message m WHERE m.admin.id = :adminId";
@@ -128,5 +138,10 @@ public class UserService {
 
         return actions;
     }
+
+    public void saveUser(User foundUser) {
+        entityManager.merge(foundUser);
+    }
+    
 
 }

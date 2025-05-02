@@ -23,7 +23,6 @@ public class AccountController {
         return accountService.getAllAccounts();
     }
 
-    //SQL fixed
     @GetMapping("/{accountNumber}")
     @PreAuthorize("hasAuthority('ADMIN')")
     public ResponseEntity<Account> getAccountByNumber(@PathVariable String accountNumber) {
@@ -35,8 +34,18 @@ public class AccountController {
 
         return ResponseEntity.ok(account);
     }
+    /*@GetMapping("/{accountNumber}")                       sql injection vulnerability
+    @PreAuthorize("hasAuthority('ADMIN')")
+    public ResponseEntity<List<Account>> getAccountByNumber(@PathVariable String accountNumber) {
+        List<Account> account = accountService.getAccountByNumber(accountNumber);
 
-  
+        if (account.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
+        }
+
+        return ResponseEntity.ok(account);
+    }*/
+
     @PostMapping("/transfer")
     @PreAuthorize("hasAuthority('USER')")
     public String transferMoney(@RequestBody Transaction transaction) {

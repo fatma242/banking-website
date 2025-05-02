@@ -5,6 +5,7 @@ import jakarta.persistence.NoResultException;
 import jakarta.persistence.PersistenceContext;
 import jakarta.transaction.Transactional;
 import org.springframework.stereotype.Service;
+import org.springframework.web.util.HtmlUtils;
 
 import com.example.demo.model.Message;
 import com.example.demo.model.User;
@@ -18,7 +19,6 @@ public class MessageService {
     @PersistenceContext
     private EntityManager entityManager;
 
-    // Missing Authentication/Authorization
     public List<Message> getAllMessages() {
         String query = "SELECT m FROM Message m";
         return entityManager.createQuery(query, Message.class).getResultList();
@@ -26,10 +26,13 @@ public class MessageService {
 
     public String sendMessageToAdmin(Long senderId, Long adminId, String content) {
         User sender = getUserById(senderId);
-        User admin = getAdminById(adminId);
-        Message message = new Message(content, sender, admin);
+        User admin  = getAdminById(adminId);
+
+        // Sanitize the content by HTML-escaping
+        String safeContent = HtmlUtils.htmlEscape(content);
+        // Persist using the escaped text
+        Message message = new Message(safeContent, sender, admin);
         entityManager.persist(message);
-    
         return "Message Sent";
     }
 
