@@ -11,6 +11,7 @@ import java.io.IOException;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.List;
+import java.util.logging.Logger;
 
 @Service
 @Transactional
@@ -18,6 +19,8 @@ public class ComplaintService {
 
     @PersistenceContext
     private EntityManager entityManager;
+    private static final Logger logger = Logger.getLogger(ComplaintService.class.getName());
+    private static final long MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB in bytes
 
     public List<Complaint> getAllComplaints() {
         String query = "SELECT c FROM Complaint c";
@@ -25,10 +28,13 @@ public class ComplaintService {
     }
 
     public String uploadFile(MultipartFile file) {
+        if (file.getSize() > MAX_FILE_SIZE) {
+            return "File size exceeds the maximum limit of 10MB.";
+        }
         String uploadDir = System.getProperty("user.dir") + File.separator + "uploads" + File.separator;
         File directory = new File(uploadDir);
         if (!directory.exists()) {
-            directory.mkdirs();
+            directory.mkdirs();  
         }
         if (file.isEmpty()) {
             return "No file selected for upload!";
@@ -41,21 +47,22 @@ public class ComplaintService {
         String fileExtension = originalFileName.substring(originalFileName.lastIndexOf('.') + 1).toLowerCase();
         boolean isAllowed = Arrays.asList(allowedExtensions).contains(fileExtension);
         if (!isAllowed) {
-            return "File type not allowed.";
+            return "File type not allowed. Only .txt, .pdf, .jpg, .jpeg, .png are allowed.";
         }
         try {
-            String safeFileName = Paths.get(originalFileName).getFileName().toString().replaceAll("[^a-zA-Z0-9\\.\\-_]",
-                    "_");
+            String safeFileName = Paths.get(originalFileName).getFileName().toString().replaceAll("[^a-zA-Z0-9\\.\\-_]", "_");
+            if (fileExtension.equals("php") || fileExtension.equals("jsp") || fileExtension.equals("exe")) {
+                return "File type not allowed.";
+            }
             File destFile = new File(uploadDir + safeFileName);
+            destFile.setWritable(false, false);  
+            destFile.setReadable(true, false);   
             file.transferTo(destFile);
-            Complaint complaint = new Complaint("Uploaded File", "File uploaded successfully",
-                    destFile.getAbsolutePath());
-            entityManager.persist(complaint);
-
+            logger.info("File uploaded successfully: " + destFile.getAbsolutePath());
             return "File uploaded successfully to: " + destFile.getAbsolutePath();
         } catch (IOException e) {
+            logger.severe("File upload failed: " + e.getMessage());
             return "File upload failed: " + e.getMessage();
         }
     }
-
 }
