@@ -5,17 +5,9 @@ import com.example.demo.model.UserDTO;
 import com.example.demo.service.UserService;
 import jakarta.annotation.security.PermitAll;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.BadCredentialsException;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.springframework.security.crypto.password.PasswordEncoder;
-
 import java.util.List;
 import java.util.Map;
 
@@ -53,35 +45,24 @@ public class UserController {
 
         return "Invalid credentials!";
     }*/
-    public String login(@RequestBody User user) {
-        PasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
+    /*public ResponseEntity<String> login(@RequestBody User user) {
         User foundUser = userService.getUserByUsername(user.getUsername());
+    
         if (foundUser != null) {
             String storedPassword = foundUser.getPassword();
             String inputPassword = user.getPassword();
-            boolean isPlainText = !storedPassword.startsWith("$2a$");
-
-            if (isPlainText) {
-                if (inputPassword.equals(storedPassword)) {
-                    String hashedPassword = passwordEncoder.encode(inputPassword);
-                    foundUser.setPassword(hashedPassword);
-                    userService.saveUser(foundUser); 
-                } else {
-                    return "Invalid credentials!";
+    
+            if (inputPassword.equals(storedPassword)) {
+                String message = "Welcome " + foundUser.getUsername() + "!";
+                if ("ADMIN".equalsIgnoreCase(foundUser.getRole())) {
+                    message = "Welcome Admin " + foundUser.getUsername() + "!";
                 }
-            } else {
-                if (!passwordEncoder.matches(inputPassword, storedPassword)) {
-                    return "Invalid credentials!";
-                }
-            }
-            if ("ADMIN".equalsIgnoreCase(foundUser.getRole())) {
-                return "Welcome Admin " + foundUser.getUsername() + "!";
-            } else {
-                return "Welcome " + foundUser.getUsername() + "!";
+                return new ResponseEntity<>(message, HttpStatus.OK);
             }
         }
-        return "Invalid credentials!";
-    }
+    
+        return new ResponseEntity<>("Invalid credentials!", HttpStatus.NOT_FOUND);
+    }*/
 
     @GetMapping("/search")
     @PreAuthorize("hasAuthority('ADMIN')")

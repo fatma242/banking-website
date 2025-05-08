@@ -8,9 +8,6 @@ import com.example.demo.model.UserDTO;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import jakarta.transaction.Transactional;
-
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
@@ -26,8 +23,6 @@ public class UserService {
 
     @PersistenceContext
     private EntityManager entityManager;
-
-    private final PasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 
 
     public List<UserDTO> getAllUsers() {
