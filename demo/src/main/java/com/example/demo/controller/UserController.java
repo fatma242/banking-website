@@ -3,6 +3,7 @@ package com.example.demo.controller;
 import com.example.demo.model.User;
 import com.example.demo.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -24,20 +25,20 @@ public class UserController {
 
     // Hard-coded Credentials
     @PostMapping("/login")
-    public String login(@RequestBody User user) {
+    public ResponseEntity<String> login(@RequestBody User user) {
         if (("admin1".equals(user.getUsername()) && "adminpass1".equals(user.getPassword())) ||
-                ("admin2".equals(user.getUsername()) && "adminpass2".equals(user.getPassword()))) {
-            return "Welcome Admin " + user.getUsername() + "!";
+            ("admin2".equals(user.getUsername()) && "adminpass2".equals(user.getPassword()))) {
+            return ResponseEntity.ok("Welcome Admin " + user.getUsername() + "!");
         }
-
+    
         User foundUser = userService.getUserByUsername(user.getUsername());
         if (foundUser != null && foundUser.getPassword().equals(user.getPassword())) {
-            return "Welcome " + foundUser.getUsername() + "!";
+            return ResponseEntity.ok("Welcome " + foundUser.getUsername() + "!");
         }
-
-        return "Invalid credentials!";
+    
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Invalid credentials!");
     }
-
+    
     @GetMapping("/search")
     public User getUserByUsername(@RequestParam String username) {
         return userService.getUserByUsername(username);
